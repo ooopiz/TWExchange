@@ -7,6 +7,7 @@ import os
 
 import libs.common
 import libs.twcrawler
+import libs.mysqlgo
 
 
 def handleCrawler(crawler, databasego, crawler_day):
@@ -54,18 +55,6 @@ def update_proxy_file(proxy_file_path, proxy_url):
 
 
 def main():
-    # get headers
-    headers = libs.common.get_headers()
-
-    root_dir = os.path.dirname(os.path.realpath(__file__))
-    proxy_file = root_dir + '/config/proxy'
-    if not os.path.isfile(proxy_file):
-        url = libs.common.get_gimmeproxy_url(headers)
-        update_proxy_file(proxy_file, url)
-
-    proxy_url = get_proxyurl_from_file(proxy_file)
-    libs.common.update_urllib_proxy(proxy_url)
-
     # Get arguments
     parser = argparse.ArgumentParser(description='Crawl data at assigned day')
     parser.add_argument('day', type=int, nargs='*',
@@ -82,9 +71,35 @@ def main():
         parser.error('Date should be assigned with (YYYY MM DD) or none')
         return
 
+    # get headers
+    headers = libs.common.get_headers()
+
+    # get and save proxy
+    root_dir = os.path.dirname(os.path.realpath(__file__))
+    proxy_file = root_dir + '/config/proxy'
+    if not os.path.isfile(proxy_file):
+        url = libs.common.get_gimmeproxy_url(headers)
+        update_proxy_file(proxy_file, url)
+
+    # update proxy
+    proxy_url = get_proxyurl_from_file(proxy_file)
+    libs.common.update_urllib_proxy(proxy_url)
+
+    # crawler
     otc = libs.twcrawler.OtcCrawler(headers)
     otc.get_every_stock_info(dCrawler)
-    libs.common.get_current_ip()
+
+    config = configparser.ConfigParser()
+    config_file = root_dir + '/config/config'
+    config.read(config_file)
+    dbConfig = config['database']
+    dbHost = dbConfig['DB_HOST']
+    dbUser = dbConfig['DB_USER']
+    dbPass = dbConfig['DB_PASS']
+    dbName = dbConfig['DB_NAME']
+    dbconnect = libs.mysqlgo.connect(dbHost, dbUser, dbPass, dbName)
+    dbconnect.execute('select 1')
+    dbconnect.close()
 
 
 if __name__ == '__main__':

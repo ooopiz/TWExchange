@@ -17,7 +17,12 @@ class OtcCrawler():
     def get_every_stock_info(self, dCrwaler):
         dOtcStart = datetime.datetime(2007, 4, 23)
         if dCrwaler >= dOtcStart:
-            self._get_every_after_960423(dCrwaler)
+            response = self._get_every_after_960423(dCrwaler)
+            res = response.read().decode('utf-8')
+            resJson = json.loads(res)
+            c_tradeDate = resJson['reportDate']
+            print('日期: ' + c_tradeDate + ',   筆數: ' + str(resJson['iTotalRecords']))
+            return resJson
 
     def _get_every_after_960423(self, dCrwaler):
         ''' after 96/04/23
@@ -40,13 +45,7 @@ class OtcCrawler():
         request_url = url + params
 
         myRequest = urllib.request.Request(request_url, headers=self.headers)
-        response = urllib.request.urlopen(myRequest)
-        res = response.read().decode('utf-8')
-        resJson = json.loads(res)
-        c_tradeDate = resJson['reportDate']
-
-        print('日期: ' + c_tradeDate + ',   筆數: ' + str(resJson['iTotalRecords']))
-        return resJson
+        return urllib.request.urlopen(myRequest)
 
 
 class TsecCrawler():
