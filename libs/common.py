@@ -1,3 +1,5 @@
+# -*- coding: utf-8 -*-
+
 import urllib.request
 import json
 
@@ -21,7 +23,7 @@ def update_urllib_proxy(proxy_url):
 
 
 def get_current_ip(headers={}):
-    ''' ????? '''
+    ''' 取得當前請求的IP '''
     check_url = 'http://icanhazip.com'
     myRequest = urllib.request.Request(check_url, headers=headers)
     response = urllib.request.urlopen(myRequest)
