@@ -1,12 +1,13 @@
 # coding=utf-8
 
-import urllib.request
-import json
 import pymysql
 import configparser
 import datetime
-import time
 import argparse
+import os
+
+import libs.common
+import libs.twcrawler
 
 
 class Databasego():
@@ -34,40 +35,6 @@ class Databasego():
 
     def dbClose(self):
         self._dbconnect.close()
-
-
-class Crawler():
-    def _get_otc_data(self, date_str):
-        ttime = str(int(time.time()*100))
-        url = 'http://www.tpex.org.tw/web/stock/aftertrading/daily_close_quotes/stk_quote_result.php?l=zh-tw&d={}&_={}'.format(date_str, ttime)
-        res = urllib.request.urlopen(url)
-        response = res.read().decode('utf-8')
-        resJson = json.loads(response)
-        c_tradeDate = resJson['reportDate']
-        e_tradeDate = c_tradeDate.replace(c_tradeDate[0:3], str(int(c_tradeDate[0:3])+ 1911))
-        '''
-        aaData[0]  = 股票代號
-        aaData[1]  = 股票名稱
-        aaData[2]  = 收盤價
-        aaData[3]  = 漲跌
-        aaData[4]  = 開盤價
-        aaData[5]  = 盤中最高
-        aaData[6]  = 盤中最低
-        aaData[7]  = 均價
-        aaData[8]  = 成交股數
-        aaData[9]  = 成交金額(元)
-        aaData[10] = 成交筆數
-        aaData[11] = 最後買價
-        aaData[12] = 最後賣價
-        aaData[13] = 發行股數
-        aaData[14] = 次日參考價
-        aaData[15] = 次日漲停價
-        aaData[16] = 次日跌停價
-        '''
-
-        print('日期: ' + e_tradeDate + ',   筆數: ' + str(resJson['iTotalRecords']))
-        resJson['reportDate'] = e_tradeDate  # 換成西元年
-        return resJson
 
 
 def handleCrawler(crawler, databasego, crawler_day):
@@ -99,20 +66,38 @@ def handleCrawler(crawler, databasego, crawler_day):
     databasego.insertData(tradeDetail)
 
 
-def main():
-    '''
-    tse first day is 2004/02/11
+def get_proxyurl_from_file(proxy_file):
+    r_file = open(proxy_file, 'r')
+    proxy_url = r_file.read()
+    proxy_url = proxy_url.strip()
+    r_file.close()
+    return proxy_url
 
-    otc
-    106/04/23 之後 http://www.tpex.org.tw/web/stock/aftertrading/daily_close_quotes/stk_quote_result.php?l=zh-tw&d=96/04/23&_=1495463910075
-    '''
+
+def update_proxy_file(proxy_file_path, proxy_url):
+    w_file = open(proxy_file_path, 'w')
+    w_file.write(proxy_url)
+    w_file.close()
+    print('create proxy file ...')
+
+
+def main():
+    # get headers
+    headers = libs.common.get_headers()
+
+    root_dir = os.path.dirname(os.path.realpath(__file__))
+    proxy_file = root_dir + '/config/proxy'
+    if not os.path.isfile(proxy_file):
+        url = libs.common.get_gimmeproxy_url(headers)
+        update_proxy_file(proxy_file, url)
+
+    proxy_url = get_proxyurl_from_file(proxy_file)
+    libs.common.update_urllib_proxy(proxy_url)
 
     # Get arguments
     parser = argparse.ArgumentParser(description='Crawl data at assigned day')
     parser.add_argument('day', type=int, nargs='*',
                         help='assigned day (format: YYYY MM DD), default is today')
-    parser.add_argument('-b', '--back', action='store_true',
-                        help='crawl back from assigned day until 2004/2/11')
 
     args = parser.parse_args()
 
@@ -127,22 +112,22 @@ def main():
 
     crawler_day = '{0}/{1:02d}/{2:02d}'.format(crawlerD.year - 1911, crawlerD.month, crawlerD.day)
 
-    # new Crawler
-    crawler = Crawler()
+    otc = libs.twcrawler.OtcCrawler(headers)
+    abc = otc.get_otc_data(crawler_day)
+    print(abc)
 
-    # new Databasego
-    config = configparser.ConfigParser()
-    config.read('config')
-    dbConfig = config['database']
-    dbHost = dbConfig['DB_HOST']
-    dbUser = dbConfig['DB_USER']
-    dbPass = dbConfig['DB_PASS']
-    dbName = dbConfig['DB_NAME']
-    databasego = Databasego(dbHost, dbUser, dbPass, dbName)
+#    config = configparser.ConfigParser()
+#    config.read('config')
+#    dbConfig = config['database']
+#    dbHost = dbConfig['DB_HOST']
+#    dbUser = dbConfig['DB_USER']
+#    dbPass = dbConfig['DB_PASS']
+#    dbName = dbConfig['DB_NAME']
+#    databasego = Databasego(dbHost, dbUser, dbPass, dbName)
 
-    handleCrawler(crawler, databasego, crawler_day)
+#    handleCrawler(crawler, databasego, crawler_day)
 
-    databasego.dbClose
+#    databasego.dbClose
 
 
 if __name__ == '__main__':
