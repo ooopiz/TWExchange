@@ -4,6 +4,10 @@ import urllib.request
 import time
 import json
 import datetime
+import logging
+
+
+logger = logging.getLogger('app')
 
 
 class OtcCrawler():
@@ -21,7 +25,7 @@ class OtcCrawler():
             res = response.read().decode('utf-8')
             resJson = json.loads(res)
             c_tradeDate = resJson['reportDate']
-            print('日期: ' + c_tradeDate + ',   筆數: ' + str(resJson['iTotalRecords']))
+            logger.info('Get OTC data - date: ' + c_tradeDate + ',   count: ' + str(resJson['iTotalRecords']))
             return resJson
 
     def _get_every_after_960423(self, dCrwaler):

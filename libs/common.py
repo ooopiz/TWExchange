@@ -2,6 +2,10 @@
 
 import urllib.request
 import json
+import logging
+
+
+logger = logging.getLogger('app')
 
 
 def get_gimmeproxy_url(headers={}):
@@ -19,7 +23,7 @@ def update_urllib_proxy(proxy_url):
     proxy_support = urllib.request.ProxyHandler({'http': proxy})
     opener = urllib.request.build_opener(proxy_support)
     urllib.request.install_opener(opener)
-    print('Proxy update to [' + proxy_url + ']')
+    logger.info('urllilb proxy update to >>' + proxy_url)
 
 
 def get_current_ip(headers={}):
@@ -28,7 +32,7 @@ def get_current_ip(headers={}):
     myRequest = urllib.request.Request(check_url, headers=headers)
     response = urllib.request.urlopen(myRequest)
     res = response.read().decode('utf-8')
-    print(res)
+    logger.info('current proxy ip detect is : ' + res.strip())
 
 
 def get_headers():

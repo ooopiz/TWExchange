@@ -4,10 +4,14 @@ import configparser
 import datetime
 import argparse
 import os
+import logging
 
 import libs.common
 import libs.twcrawler
 import libs.mysqlgo
+
+
+logger = logging.getLogger('app')
 
 
 def handleCrawler(crawler, databasego, crawler_day):
@@ -51,10 +55,28 @@ def update_proxy_file(proxy_file_path, proxy_url):
     w_file = open(proxy_file_path, 'w')
     w_file.write(proxy_url)
     w_file.close()
-    print('create proxy file ...')
+    logger.info('create proxy file ...')
+
+
+def set_logger(log_path=''):
+    if not log_path == '':
+        logging.basicConfig(level=logging.DEBUG,
+                            format='%(asctime)s [%(name)-3s - %(levelname)-8s] %(message)s',
+                            datefmt='%y-%m-%d %H:%M:%S',
+                            handlers=[logging.FileHandler(log_path, 'a', 'utf-8')])
+
+    formatter = logging.Formatter('%(asctime)s [%(levelname)-7s] : %(message)s')
+
+    console = logging.StreamHandler()
+    console.setFormatter(formatter)
+
+    applogger = logging.getLogger('app')
+    applogger.addHandler(console)
+    applogger.setLevel(logging.DEBUG)
 
 
 def main():
+
     # Get arguments
     parser = argparse.ArgumentParser(description='Crawl data at assigned day')
     parser.add_argument('day', type=int, nargs='*',
@@ -71,12 +93,17 @@ def main():
         parser.error('Date should be assigned with (YYYY MM DD) or none')
         return
 
-    # get headers
-    headers = libs.common.get_headers()
-
-    # get and save proxy
+    # define absolute files path
     root_dir = os.path.dirname(os.path.realpath(__file__))
     proxy_file = root_dir + '/config/proxy'
+    config_file = root_dir + '/config/config'
+    log_file = root_dir + '/logs/app.log'
+
+    # set logger
+    set_logger(log_file)
+    # get headers
+    headers = libs.common.get_headers()
+    # get and save proxy
     if not os.path.isfile(proxy_file):
         url = libs.common.get_gimmeproxy_url(headers)
         update_proxy_file(proxy_file, url)
@@ -90,7 +117,6 @@ def main():
     otc.get_every_stock_info(dCrawler)
 
     config = configparser.ConfigParser()
-    config_file = root_dir + '/config/config'
     config.read(config_file)
     dbConfig = config['database']
     dbHost = dbConfig['DB_HOST']
