@@ -1,46 +1,14 @@
 # -*- coding: utf-8 -*-
 
-import configparser
 import datetime
 import argparse
 import os
 import logging
-
 import libs.common
 import libs.twcrawler
-import libs.mysqlgo
-
+import libs.stockservice
 
 logger = logging.getLogger('app')
-
-
-def handleCrawler(crawler, databasego, crawler_day):
-    responseData = crawler._get_otc_data(crawler_day)
-
-    # 沒資料就離開
-    if responseData['iTotalRecords'] == 0:
-        return
-
-    tradeDetail = []
-    for value in responseData['aaData']:
-        tradeDetail.append((responseData['reportDate'],
-                            value[0].strip(),
-                            value[2].strip(),
-                            value[3].strip(),
-                            value[4].strip(),
-                            value[5].strip(),
-                            value[6].strip(),
-                            value[8].strip().replace(',', ''),
-                            value[9].strip().replace(',', ''),
-                            value[10].strip().replace(',', ''),
-                            value[11].strip(),
-                            value[12].strip(),
-                            value[13].strip().replace(',', ''),
-                            value[15].strip(),
-                            value[16].strip()
-                            ))
-
-    databasego.insertData(tradeDetail)
 
 
 def get_proxyurl_from_file(proxy_file):
@@ -66,24 +34,19 @@ def set_logger(log_path=''):
                             handlers=[logging.FileHandler(log_path, 'a', 'utf-8')])
 
     formatter = logging.Formatter('%(asctime)s [%(levelname)-7s] : %(message)s')
-
     console = logging.StreamHandler()
     console.setFormatter(formatter)
-
     applogger = logging.getLogger('app')
     applogger.addHandler(console)
     applogger.setLevel(logging.DEBUG)
 
 
 def main():
-
     # Get arguments
     parser = argparse.ArgumentParser(description='Crawl data at assigned day')
     parser.add_argument('day', type=int, nargs='*',
                         help='assigned day (format: YYYY MM DD), default is today')
-
     args = parser.parse_args()
-
     # Day only accept 0 or 3 arguments
     if len(args.day) == 0:
         dCrawler = datetime.datetime.today()
@@ -94,10 +57,9 @@ def main():
         return
 
     # define absolute files path
-    root_dir = os.path.dirname(os.path.realpath(__file__))
-    proxy_file = root_dir + '/config/proxy'
-    config_file = root_dir + '/config/config'
-    log_file = root_dir + '/logs/app.log'
+    this_path = os.path.abspath(os.path.dirname(__file__))
+    proxy_file = os.path.join(this_path, "config/proxy")
+    log_file = os.path.join(this_path, "logs/app.log")
 
     # set logger
     set_logger(log_file)
@@ -114,18 +76,16 @@ def main():
 
     # crawler
     otc = libs.twcrawler.OtcCrawler(headers)
-    otc.get_every_stock_info(dCrawler)
+    crawler_data = otc.get_every_stock_info(dCrawler)
+    if crawler_data['iTotalRecords'] == 0:
+        return
 
-    config = configparser.ConfigParser()
-    config.read(config_file)
-    dbConfig = config['database']
-    dbHost = dbConfig['DB_HOST']
-    dbUser = dbConfig['DB_USER']
-    dbPass = dbConfig['DB_PASS']
-    dbName = dbConfig['DB_NAME']
-    dbconnect = libs.mysqlgo.connect(dbHost, dbUser, dbPass, dbName)
-    dbconnect.execute('select 1')
-    dbconnect.close()
+    crawler_day = '{0}/{1:02d}/{2:02d}'.format(dCrawler.year, dCrawler.month, dCrawler.day)
+    if libs.stockservice.check_crawler_day_data_exist(crawler_day):
+        print('have data')
+    else:
+        libs.stockservice.insert_otc_data(crawler_data)
+        print('dont have data')
 
 
 if __name__ == '__main__':

@@ -4,7 +4,6 @@ import urllib.request
 import json
 import logging
 
-
 logger = logging.getLogger('app')
 
 
@@ -23,7 +22,7 @@ def update_urllib_proxy(proxy_url):
     proxy_support = urllib.request.ProxyHandler({'http': proxy})
     opener = urllib.request.build_opener(proxy_support)
     urllib.request.install_opener(opener)
-    logger.info('urllilb proxy update to >>' + proxy_url)
+    logger.info('urllilb proxy update to >>  ' + proxy_url)
 
 
 def get_current_ip(headers={}):

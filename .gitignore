@@ -1,4 +1,13 @@
-.vscode/
-config/config
-config/proxy
+Thumbs.db
+.DS_Store
 
+.idea/
+out/
+*.iml
+*.iws
+
+.vscode/
+
+
+config/config.cfg
+config/proxy
