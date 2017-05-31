@@ -13,8 +13,7 @@ def main():
     while dCrawler <= today:
         str_day = '{0} {1:02d} {2:02d}'.format(dCrawler.year, dCrawler.month, dCrawler.day)
         command = 'python3 ' + crawler_file + ' ' + str_day
-        # os.system(command)
-        print(command)
+        os.system(command)
         dCrawler = dCrawler + datetime.timedelta(days=1)
 
 
