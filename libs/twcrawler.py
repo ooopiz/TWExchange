@@ -5,6 +5,7 @@ import time
 import json
 import datetime
 import logging
+import socket
 
 
 logger = logging.getLogger('app')
@@ -21,12 +22,18 @@ class OtcCrawler():
     def get_every_stock_info(self, dCrwaler):
         dOtcStart = datetime.datetime(2007, 4, 23)
         if dCrwaler >= dOtcStart:
-            response = self._get_every_after_960423(dCrwaler)
-            res = response.read().decode('utf-8')
-            resJson = json.loads(res)
-            c_tradeDate = resJson['reportDate']
-            logger.info('Get OTC data - date: ' + c_tradeDate + ',   count: ' + str(resJson['iTotalRecords']))
-            return resJson
+            try:
+                res_status = 1
+                resJson = ''
+                response = self._get_every_after_960423(dCrwaler)
+                res = response.read().decode('utf-8')
+                resJson = json.loads(res)
+                c_tradeDate = resJson['reportDate']
+                logger.info('Get OTC data - date: ' + c_tradeDate + ',   count: ' + str(resJson['iTotalRecords']))
+            except Exception:
+                res_status = 2
+
+            return res_status, resJson
 
     def _get_every_after_960423(self, dCrwaler):
         ''' after 96/04/23
@@ -49,7 +56,16 @@ class OtcCrawler():
         request_url = url + params
 
         myRequest = urllib.request.Request(request_url, headers=self.headers)
-        return urllib.request.urlopen(myRequest, timeout=10)
+        try:
+            rtn_data = urllib.request.urlopen(myRequest, timeout=10)
+        except socket.timeout:
+            logger.warning('_get_every_after_960423 timeout ...')
+            raise
+        except Exception as e:
+            logger.error(e)
+            raise
+
+        return rtn_data
 
 
 class TsecCrawler():

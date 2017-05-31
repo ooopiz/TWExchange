@@ -7,6 +7,7 @@ import logging
 import libs.common
 import libs.twcrawler
 import libs.stockservice
+import time
 
 logger = logging.getLogger('app')
 
@@ -76,7 +77,17 @@ def main():
 
     # crawler
     otc = libs.twcrawler.OtcCrawler(headers)
-    crawler_data = otc.get_every_stock_info(dCrawler)
+    while 1 == 1:
+        crawler_status, crawler_data = otc.get_every_stock_info(dCrawler)
+        if crawler_status == 1:
+            break
+        if crawler_status == 2:
+            url = libs.common.get_gimmeproxy_url(headers)
+            update_proxy_file(proxy_file, url)
+            proxy_url = get_proxyurl_from_file(proxy_file)
+            libs.common.update_urllib_proxy(proxy_url)
+        time.sleep(10)
+
     if crawler_data['iTotalRecords'] == 0:
         return
 
