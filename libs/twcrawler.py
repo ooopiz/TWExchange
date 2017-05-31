@@ -49,7 +49,7 @@ class OtcCrawler():
         request_url = url + params
 
         myRequest = urllib.request.Request(request_url, headers=self.headers)
-        return urllib.request.urlopen(myRequest)
+        return urllib.request.urlopen(myRequest, timeout=10)
 
 
 class TsecCrawler():

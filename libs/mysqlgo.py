@@ -26,7 +26,25 @@ class connect():
     def close(self):
         self._connect.close()
 
-    def execute(self, sql):
+    def insert(self, sql, value):
+        try:
+            self._cursor.executemany(sql, value)
+            self._connect.commit()
+        except Exception as e:
+            self._connect.rollback()
+            logger.error(e)
+            raise
+
+    def update(self, sql, value):
+        try:
+            self._cursor.execute(sql, value)
+            self._connect.commit()
+        except Exception as e:
+            self._connect.rollback()
+            logger.error(e)
+            raise
+
+    def query(self, sql):
         try:
             result = ''
             self._cursor.execute(sql)
@@ -35,12 +53,3 @@ class connect():
             logger.error(e)
             raise
         return result
-
-    def executemany(self, sql, value):
-        try:
-            self._cursor.executemany(sql, value)
-            self._connect.commit()
-        except Exception as e:
-            self._connect.rollback()
-            logger.error(e)
-            raise

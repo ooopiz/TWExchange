@@ -80,12 +80,15 @@ def main():
     if crawler_data['iTotalRecords'] == 0:
         return
 
+    otc_stock_data = libs.stockservice.get_otc_stock_data(crawler_data)
+
     crawler_day = '{0}/{1:02d}/{2:02d}'.format(dCrawler.year, dCrawler.month, dCrawler.day)
     if libs.stockservice.check_crawler_day_data_exist(crawler_day):
-        print('have data')
+        libs.stockservice.insert_or_update_otc_stock_data(otc_stock_data)
+        logger.info('Updating data .....')
     else:
-        libs.stockservice.insert_otc_data(crawler_data)
-        print('dont have data')
+        libs.stockservice.insert_otc_stock_data(otc_stock_data)
+        logger.info('Inserting data .....')
 
 
 if __name__ == '__main__':
