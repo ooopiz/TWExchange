@@ -2,6 +2,7 @@
 
 import datetime
 import os
+import time
 
 
 def main():
@@ -17,6 +18,7 @@ def main():
         command = 'python3 ' + crawler_file + ' ' + str_day
         os.system(command)
         dCrawler = dCrawler + datetime.timedelta(days=1)
+        time.sleep(30)
 
 
 if __name__ == '__main__':
