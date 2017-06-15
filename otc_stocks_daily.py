@@ -3,6 +3,8 @@
 import datetime
 import argparse
 import logging
+import socket
+import time
 import libs.system
 import libs.twcrawler
 import libs.stockservice
@@ -37,7 +39,19 @@ def main():
 
     date_str = '{0}/{1:02d}/{2:02d}'.format(dCrawler.year, dCrawler.month, dCrawler.day)
     logger.info('Starting crawler ' + date_str)
-    crawler_status, crawler_detail = otc.get_otc_dayily_close(dCrawler)
+
+    timeout_listen = 1
+    while timeout_listen == 1:
+        try:
+            crawler_status, crawler_detail = otc.get_otc_dayily_close(dCrawler)
+            timeout_listen = 0
+        except socket.timeout:
+            logger.warning('Request timeout, Try to update proxy then send request again ')
+            libs.system.update_proxy_file()
+            libs.system.update_urllib_proxy()
+            time.sleep(20)
+        except:
+            raise
 
     if crawler_status == 0:
         logger.warning('Please Check date in range')
@@ -52,8 +66,7 @@ def main():
         logger.info('Updating data .....')
     else:
         libs.stockservice.insert_otc_stock_data(crawler_detail)
-    # libs.system.update_proxy_file()
-    # libs.system.update_urllib_proxy()
+        logger.info('Inserting data .....')
 
     # required field
     # 股票代號
