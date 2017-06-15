@@ -6,7 +6,6 @@ import logging
 import libs.system
 import libs.twcrawler
 import libs.stockservice
-import time
 
 logger = logging.getLogger('app')
 
