@@ -112,14 +112,14 @@ class OtcCrawler():
                 value[5] = 0
             if value[6].strip() == '---':
                 value[6] = 0
-            value[0] = value[0].strip(),
-            value[8] = value[8].strip().replace(',', ''),
-            value[9] = value[9].strip().replace(',', ''),
-            value[10] = value[10].strip().replace(',', ''),
-            value[11] = value[11].strip(),
-            value[12] = value[12].strip(),
-            value[13] = value[13].strip().replace(',', ''),
-            value[15] = value[15].strip(),
+            value[0] = value[0].strip()
+            value[8] = value[8].strip().replace(',', '')
+            value[9] = value[9].strip().replace(',', '')
+            value[10] = value[10].strip().replace(',', '')
+            value[11] = value[11].strip()
+            value[12] = value[12].strip()
+            value[13] = value[13].strip().replace(',', '')
+            value[15] = value[15].strip()
             value[16] = value[16].strip()
             datalist.append((trade_date,
                             value[0], value[2], value[4], value[5], value[6],
