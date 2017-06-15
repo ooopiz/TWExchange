@@ -6,40 +6,9 @@ import libs.mysqlgo
 logger = logging.getLogger('app')
 
 
-def get_otc_stock_data(crawler_data):
-    ''' 取得資料, 清洗格式  '''
-    report_date = crawler_data['reportDate']
-    split_date = report_date.split('/')
-    trade_date = str(int(split_date[0]) + 1911) + '/' + split_date[1] + '/' + split_date[2]
-    trade_detail = []
-    for value in crawler_data['aaData']:
-        if value[2].strip() == '---':
-            value[2] = 0
-        if value[4].strip() == '---':
-            value[4] = 0
-        if value[5].strip() == '---':
-            value[5] = 0
-        if value[6].strip() == '---':
-            value[6] = 0
-        trade_detail.append((trade_date,
-                            value[0].strip(),
-                            value[2],
-                            value[4],
-                            value[5],
-                            value[6],
-                            value[8].strip().replace(',', ''),
-                            value[9].strip().replace(',', ''),
-                            value[10].strip().replace(',', ''),
-                            value[11].strip(),
-                            value[12].strip(),
-                            value[13].strip().replace(',', ''),
-                            value[15].strip(),
-                            value[16].strip()))
-    return trade_detail
-
-
-def check_crawler_day_data_exist(str_date):
-    sql = 'select count(*) from otc_stocks where trade_date = "%s"' % str_date
+def check_crawler_day_data_exist(dCrawler):
+    date_str = '{0}/{1:02d}/{2:02d}'.format(dCrawler.year, dCrawler.month, dCrawler.day)
+    sql = 'select count(*) from otc_stocks where trade_date = "%s"' % date_str
     dbconnect = libs.mysqlgo.connect()
     data = dbconnect.query(sql)
     if data[0][0] > 0:
