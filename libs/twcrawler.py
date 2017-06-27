@@ -6,6 +6,7 @@ import json
 import datetime
 import logging
 import socket
+import gzip
 import bs4
 import pandas
 
@@ -62,6 +63,63 @@ class OtcCrawler():
     # ==========================================================================
     # 2.st
     # ==========================================================================
+    def _get_between_960101_and_960420(self, dCrwaler):
+        ''' between 96/01/01 96/04/20 '''
+        ttime = str(int(time.time()*100))
+        url = 'http://www.tpex.org.tw/web/stock/aftertrading/daily_close_quotesB/stk_quote_result.php?'
+        params = 'timestamp={}'.format(ttime)
+        request_url = url + params
+        date_str = '{0}/{1:02d}/{2:02d}'.format(dCrwaler.year - 1911, dCrwaler.month, dCrwaler.day)
+        values = {'ajax': True, 'input_date': date_str}
+        post_data = urllib.parse.urlencode(values)
+        post_data = post_data.encode('utf-8')
+        myRequest = urllib.request.Request(request_url, data=post_data, headers=self.headers)
+        try:
+            response = urllib.request.urlopen(myRequest, timeout=15)
+            if response.info().get('Content-Encoding') == 'gzip':
+                gzipFile = gzip.GzipFile(fileobj=response)
+                response = gzipFile
+
+            dom = response.read().decode('utf-8')
+            return dom
+        except socket.timeout:
+            logger.warning('_get_stocks_before_951231 timeout ...')
+            raise
+        except Exception as e:
+            logger.error(e)
+            raise
+
+    def _get_between_960101_and_960420_clean(self, dom):
+        ''' Clean data and return json '''
+        soup = bs4.BeautifulSoup(dom, "lxml")
+        table = pandas.read_html(str(soup.find_all('table')[1]))[0]
+
+        # replace string
+        table[2] = table[2].str.replace('⊕', '')
+        table[2] = table[2].str.replace('⊙', '')
+        table[4] = table[4].str.replace('⊕', '')
+        table[4] = table[4].str.replace('⊙', '')
+        table[5] = table[5].str.replace('⊕', '')
+        table[5] = table[5].str.replace('⊙', '')
+        table[6] = table[6].str.replace('⊕', '')
+        table[6] = table[6].str.replace('⊙', '')
+
+        table = table[table[0] != '管理股票']
+
+        jsonstr = table.to_json(orient="records")
+        json_data = json.loads(jsonstr)
+        return json_data
+
+    def _get_between_960101_and_960420_filter(self, c_date, json_data):
+        ''' Filter the required information, return list '''
+        date_str = '{0}/{1:02d}/{2:02d}'.format(c_date.year, c_date.month, c_date.day)
+        datalist = []
+        for value in json_data:
+            datalist.append((date_str,
+                             value['0'], value['2'], value['4'], value['5'], value['6'],
+                             value['8'], value['9'], value['10'], value['11'], value['12'],
+                             value['13'], value['15'], value['16']))
+        return datalist
 
     # ==========================================================================
     # 3.st
@@ -153,6 +211,9 @@ class OtcCrawler():
         if dCrwaler >= otc_d3 and dCrwaler <= otc_d4:
             # 96/01/02 ~ 96/04/20
             logger.info('Crwaler between 2007-01-01 and 2007-04-20')
+            dom = self._get_between_960101_and_960420(dCrwaler)
+            json_data = self._get_between_960101_and_960420_clean(dom)
+            list_data = self._get_between_960101_and_960420_filter(dCrwaler, json_data)
             status = 1
 
         if dCrwaler >= otc_d5:

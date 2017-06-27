@@ -58,7 +58,7 @@ def main():
         return
 
     if len(crawler_detail) == 0:
-        logger.info('No data in' + date_str)
+        logger.info('No data in ' + date_str)
         return
 
     if libs.stockservice.check_crawler_day_data_exist(dCrawler):
